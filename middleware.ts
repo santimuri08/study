@@ -1,30 +1,23 @@
 // middleware.ts
-import { auth } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
 
-// Routes that require authentication.
-const PROTECTED = ["/chat"];
+export const { auth: middleware } = NextAuth(authConfig);
 
-export default auth((req) => {
+export default middleware((req) => {
   const { pathname } = req.nextUrl;
+  const isProtected = pathname === "/chat" || pathname.startsWith("/chat/");
 
-  const isProtected = PROTECTED.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`)
-  );
-
-  if (!isProtected) return NextResponse.next();
+  if (!isProtected) return;
 
   if (!req.auth) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
+    return Response.redirect(url);
   }
-
-  return NextResponse.next();
 });
 
-// Matcher: run middleware on everything except Next internals and static assets.
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth).*)"],
 };
